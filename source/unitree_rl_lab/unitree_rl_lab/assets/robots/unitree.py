@@ -27,7 +27,7 @@ class UnitreeArticulationCfg(ArticulationCfg):
     soft_joint_pos_limit_factor = 0.9
 
 
-UNITREE_MODEL_DIR = MISSING
+UNITREE_MODEL_DIR = "/home/kh/hkh/code/unitree_rl_lab/unitree_model"
 
 UNITREE_GO2_CFG = UnitreeArticulationCfg(
     spawn=sim_utils.UsdFileCfg(
@@ -401,7 +401,7 @@ UNITREE_G1_29DOF_CFG = UnitreeArticulationCfg(
         ),
     ),
     init_state=ArticulationCfg.InitialStateCfg(
-        pos=(0.0, 0.0, 0.8),
+        pos=(0.0, 0.0, 1.1),
         joint_pos={
             "left_hip_pitch_joint": -0.1,
             "right_hip_pitch_joint": -0.1,

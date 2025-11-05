@@ -17,9 +17,21 @@ from isaaclab.terrains import TerrainImporterCfg
 from isaaclab.utils import configclass
 from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR, ISAACLAB_NUCLEUS_DIR
 from isaaclab.utils.noise import AdditiveUniformNoiseCfg as Unoise
+from isaaclab.terrains.config.task2 import ROUGH_TERRAINS_CFG
+from isaaclab.assets import (
+    Articulation,
+    ArticulationCfg,
+    AssetBaseCfg,
+    RigidObject,
+    RigidObjectCfg,
+    RigidObjectCollection,
+    RigidObjectCollectionCfg,
+)
 
 from unitree_rl_lab.assets.robots.unitree import UNITREE_G1_29DOF_CFG as ROBOT_CFG
 from unitree_rl_lab.tasks.locomotion import mdp
+# from velocity_env_cfg.import RobotEnvCfg
+import torch
 
 COBBLESTONE_ROAD_CFG = terrain_gen.TerrainGeneratorCfg(
     size=(8.0, 8.0),
@@ -42,11 +54,30 @@ class RobotSceneCfg(InteractiveSceneCfg):
     """Configuration for the terrain scene with a legged robot."""
 
     # ground terrain
+    # terrain = TerrainImporterCfg(
+    #     prim_path="/World/ground",
+    #     terrain_type="generator",  # "plane", "generator"
+    #     terrain_generator=ROUGH_TERRAINS_CFG,  # None, ROUGH_TERRAINS_CFG
+    #     max_init_terrain_level=ROUGH_TERRAINS_CFG.num_rows - 1,
+    #     collision_group=-1,
+    #     physics_material=sim_utils.RigidBodyMaterialCfg(
+    #         friction_combine_mode="multiply",
+    #         restitution_combine_mode="multiply",
+    #         static_friction=1.0,
+    #         dynamic_friction=1.0,
+    #     ),
+    #     visual_material=sim_utils.MdlFileCfg(
+    #         mdl_path=f"{ISAACLAB_NUCLEUS_DIR}/Materials/TilesMarbleSpiderWhiteBrickBondHoned/TilesMarbleSpiderWhiteBrickBondHoned.mdl",
+    #         project_uvw=True,
+    #         texture_scale=(0.25, 0.25),
+    #     ),
+    #     debug_vis=False,
+    # )
     terrain = TerrainImporterCfg(
         prim_path="/World/ground",
-        terrain_type="generator",  # "plane", "generator"
-        terrain_generator=COBBLESTONE_ROAD_CFG,  # None, ROUGH_TERRAINS_CFG
-        max_init_terrain_level=COBBLESTONE_ROAD_CFG.num_rows - 1,
+        terrain_type="generator",
+        terrain_generator=ROUGH_TERRAINS_CFG,
+        max_init_terrain_level=3,
         collision_group=-1,
         physics_material=sim_utils.RigidBodyMaterialCfg(
             friction_combine_mode="multiply",
@@ -83,6 +114,118 @@ class RobotSceneCfg(InteractiveSceneCfg):
             texture_file=f"{ISAAC_NUCLEUS_DIR}/Materials/Textures/Skies/PolyHaven/kloofendal_43d_clear_puresky_4k.hdr",
         ),
     )
+    # object_B=RigidObjectCfg(
+    #     prim_path="/World/Object_B",
+    #     spawn=sim_utils.CuboidCfg(
+    #             size=(10, 8, 0.29),
+    #             visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(1.0, 0.0, 0.0), metallic=0.2),
+    #             rigid_props=sim_utils.RigidBodyPropertiesCfg(
+    #                 solver_position_iteration_count=4, solver_velocity_iteration_count=0
+    #             ),
+    #             mass_props=sim_utils.MassPropertiesCfg(mass=1.0),
+    #             collision_props=sim_utils.CollisionPropertiesCfg(),
+    #         ),
+    #         init_state=RigidObjectCfg.InitialStateCfg(pos=(0.0, 0, 0.145)),
+    # )
+    
+    object_task2: RigidObjectCfg = RigidObjectCfg(
+        prim_path="{ENV_REGEX_NS}/Object",
+        # prim_path="/World/Object",
+        spawn=sim_utils.MultiAssetSpawnerCfg(
+            assets_cfg=[
+                # sim_utils.ConeCfg(
+                #     radius=0.3,
+                #     height=0.6,
+                #     visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.0, 1.0, 0.0), metallic=0.2),
+                # ),
+                sim_utils.CuboidCfg(
+                    size=(15, 15, 0.18),
+                    # visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(1.0, 1.0, 0.0), metallic=0.2),
+                     visual_material=sim_utils.MdlFileCfg(
+                    mdl_path="{NVIDIA_NUCLEUS_DIR}/Materials/Base/Carpet/Carpet_Pattern_Squares_Multi.mdl",
+                    #  mdl_path="/data/hkh/isaacsim_content/ASSET/NVIDIA/Materials/vMaterials_2/Wood/Wood_Tiles_Fineline_Multicolor.mdl",
+                    project_uvw=True,
+                    texture_scale=(25.0, 25.0),
+            ),
+                ),
+                # sim_utils.SphereCfg(
+                #     radius=0.3,
+                #     visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.0, 0.0, 1.0), metallic=0.2),
+                # ),
+            ],
+            random_choice=True,
+            rigid_props=sim_utils.RigidBodyPropertiesCfg(
+                solver_position_iteration_count=80, solver_velocity_iteration_count=20
+            ),
+            # rigid_props=sim_utils.RigidBodyPropertiesCfg(),
+            mass_props=sim_utils.MassPropertiesCfg(mass=1000),
+            collision_props=sim_utils.CollisionPropertiesCfg(collision_enabled=True),
+
+        ),
+        init_state=RigidObjectCfg.InitialStateCfg(pos=(0, 0.0, 0.2)),
+)
+    
+    shake_terrian_cfg = RigidObjectCfg(
+        prim_path="{ENV_REGEX_NS}/shake_terrian", 
+        # prim_path="/World/envs/env_.*/shake_terrian",
+        spawn=sim_utils.CuboidCfg(
+            size=(20, 20, 0.1),
+            rigid_props=sim_utils.RigidBodyPropertiesCfg(),
+            mass_props=sim_utils.MassPropertiesCfg(mass=1000.0),
+            collision_props=sim_utils.CollisionPropertiesCfg(),
+            # visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.0, 1.0, 0.0), metallic=0.2),
+            visual_material=sim_utils.MdlFileCfg(
+                mdl_path="{NVIDIA_NUCLEUS_DIR}/Materials/Base/Architecture/Shingles_01.mdl",
+                #  mdl_path="/data/hkh/isaacsim_content/ASSET/NVIDIA/Materials/vMaterials_2/Wood/Wood_Tiles_Fineline_Multicolor.mdl",
+                project_uvw=True,
+                texture_scale=(15.0, 15.0),
+            ),
+            physics_material=sim_utils.RigidBodyMaterialCfg(
+                friction_combine_mode="multiply",
+                restitution_combine_mode="multiply",
+                static_friction=0.001,
+                dynamic_friction=0.001, ),
+        ),
+        init_state=RigidObjectCfg.InitialStateCfg(pos=(0, 0.0, 0.05)),
+)
+
+
+
+# object_friction_task2: RigidObjectCfg = RigidObjectCfg(
+#         prim_path="{ENV_REGEX_NS}/Objectb",
+#         # prim_path="/World/Object",
+#         spawn=sim_utils.MultiAssetSpawnerCfg(
+#             assets_cfg=[
+#                 # sim_utils.ConeCfg(
+#                 #     radius=0.3,
+#                 #     height=0.6,
+#                 #     visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.0, 1.0, 0.0), metallic=0.2),
+#                 # ),
+#                 sim_utils.CuboidCfg(
+#                     size=(30, 20, 0.01),
+#                     visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(1.0, 1.0, 1.0), metallic=0.2),
+#                 ),
+#                 # sim_utils.SphereCfg(
+#                 #     radius=0.3,
+#                 #     visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.0, 0.0, 1.0), metallic=0.2),
+#                 # ),
+#             ],
+#             random_choice=True,
+#             rigid_props=sim_utils.RigidBodyPropertiesCfg(
+#                 solver_position_iteration_count=80, solver_velocity_iteration_count=20,
+#             ),
+#             # rigid_props=sim_utils.RigidBodyPropertiesCfg(),
+#             mass_props=sim_utils.MassPropertiesCfg(mass=10),
+#             collision_props=sim_utils.CollisionPropertiesCfg(collision_enabled=True),
+#         ),
+#         init_state=RigidObjectCfg.InitialStateCfg(pos=(-2.5, 0.0, 0.005)),
+#         physics_material=sim_utils.RigidBodyMaterialCfg(
+#             friction_combine_mode="multiply",
+#             restitution_combine_mode="multiply",
+#             static_friction=0.1,
+#             dynamic_friction=0.1, ),
+# )
+
 
 
 @configclass
@@ -110,6 +253,13 @@ class EventCfg:
             "mass_distribution_params": (-1.0, 3.0),
             "operation": "add",
         },
+    )
+
+    push_robot = EventTerm(
+        func=mdp.push_by_setting_velocity,
+        mode="interval",
+        interval_range_s=(10.0, 15.0),
+        params={"velocity_range": {"x": (-0.5, 0.5), "y": (-0.5, 0.5)}},
     )
 
     # reset
@@ -150,11 +300,19 @@ class EventCfg:
 
     # interval
     push_robot = EventTerm(
-        func=mdp.push_by_setting_velocity,
+        func=mdp.push_platforms_setting_velocity,
         mode="interval",
-        interval_range_s=(5.0, 5.0),
-        params={"velocity_range": {"x": (-0.5, 0.5), "y": (-0.5, 0.5)}},
+        interval_range_s=(0, 0.02),
+        params={"velocity_range": {"x": (0.5, 0.5), "y": (-0, 0)},
+                "asset_cfg": SceneEntityCfg("object_task2", body_names="Object"),
+                # "env_ids": torch.tensor([0])
+                },
     )
+
+    # dynamic platforms
+    # push_platform = EventTerm(
+
+    # )
 
 
 @configclass
@@ -346,12 +504,18 @@ class TerminationsCfg:
     base_height = DoneTerm(func=mdp.root_height_below_minimum, params={"minimum_height": 0.2})
     bad_orientation = DoneTerm(func=mdp.bad_orientation, params={"limit_angle": 0.8})
 
-
+    out_of_terrian = DoneTerm(
+        func=mdp.out_of_terrian,
+        params={"robot_cfg": SceneEntityCfg("robot"), 
+                "shake_terrian_cfg": SceneEntityCfg("object_task2"),
+                "threshold": 7.5},
+    )
 @configclass
+    # vertical_scale=0.005, ## kh????
 class CurriculumCfg:
     """Curriculum terms for the MDP."""
 
-    terrain_levels = CurrTerm(func=mdp.terrain_levels_vel)
+    # terrain_levels = CurrTerm(func=mdp.terrain_levels_vel)
     lin_vel_cmd_levels = CurrTerm(mdp.lin_vel_cmd_levels)
 
 
